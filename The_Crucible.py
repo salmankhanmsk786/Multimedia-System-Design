@@ -271,7 +271,7 @@ def upload_to_frameio(token, parent_asset_id, file_path):
     except Exception as e:
         print(f"Failed to upload {file_path}: {e}")
 
-api_token = 'fio-u-QnXfiuodqz1AHPcL61Lt3EUrJwLMSD9kUAkGjvjJNL712LSagNcndvHSvBV_WnX9'
+api_token = 'TOKEN'
 parent_asset_id = '67675b7e-deab-4d0c-b6df-f5b7bb595381'
 
 def main():
