@@ -3,11 +3,21 @@
 # 05/03/2024
 # Professor, Chaja
 
+
+# How to use the script with command line arguments
+
+# python The_Crucible.py -b Baselight_export.txt -x Xytech.txt -c process
+
+# python The_Crucible.py -v twitch_nft_demo.mp4 -c video
+
+# python The_Crucible.py -c export -b Baselight_export.txt -x Xytech.txt -v twitch_nft_demo.mp4
+
+
+
 import pandas as pd
 import subprocess
 from pymongo import MongoClient
 import argparse
-import re
 import os
 import time
 from frameioclient import FrameioClient
@@ -25,8 +35,6 @@ def patched_retry(self, *args, **kwargs):
     original_retry(self, *args, **kwargs)
 
 Retry.__init__ = patched_retry
-
-from frameioclient import FrameioClient
 
 
 # Establish a connection to MongoDB
