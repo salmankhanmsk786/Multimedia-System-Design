@@ -3,16 +3,14 @@
 # 05/03/2024
 # Professor, Chaja
 
-
 # How to use the script with command line arguments
+# Note: before runnning the script delete thumbnails folder and output.csv file to create new thumbnails and csv file else it will append the data to the existing csv file.
 
 # python The_Crucible.py -b Baselight_export.txt -x Xytech.txt -c process
 
 # python The_Crucible.py -v twitch_nft_demo.mp4 -c video
 
 # python The_Crucible.py -c export -b Baselight_export.txt -x Xytech.txt -v twitch_nft_demo.mp4
-
-
 
 import pandas as pd
 import subprocess
@@ -21,10 +19,10 @@ import argparse
 import os
 import time
 from frameioclient import FrameioClient
-
-import urllib3
+from openpyxl import Workbook
+from PIL import Image as PILImage
+from openpyxl.drawing.image import Image as OpenpyxlImage
 from urllib3.util import Retry
-import requests.adapters
 
 # Patch the Retry class
 original_retry = Retry.__init__
@@ -203,6 +201,12 @@ def create_thumbnail(video_path, frame, fps):
     try:
         subprocess.run(command, check=True)
         print(f"Thumbnail created and saved to {thumbnail_path}")
+
+        # Resize to 96x74
+        img = PILImage.open(thumbnail_path)
+        img.thumbnail((96, 74))
+        img.save(thumbnail_path)
+
         return thumbnail_path
     except subprocess.CalledProcessError as e:
         print(f"Failed to create thumbnail for frame {frame}: {e}")
@@ -238,7 +242,7 @@ def calculate_frame_ranges(frames):
     ranges.append((start, end))
     return ranges
 
-def merge_and_export_csv(baselight_data, xytech_data, video_path, csv_filepath, fps=24):
+def merge_and_export_csv(baselight_data, xytech_data, video_path, csv_filepath, xls_filepath, fps=24):
     merged_data = []
     for file_path, frame_numbers in baselight_data:
         frame_ranges = format_frame_ranges(frame_numbers)
@@ -262,25 +266,30 @@ def merge_and_export_csv(baselight_data, xytech_data, video_path, csv_filepath, 
                 upload_to_frameio(api_token, parent_asset_id, thumbnail_path)  # Add this line
     df = pd.DataFrame(merged_data)
     df.to_csv(csv_filepath, index=False)
-    print(f"CSV exported to {csv_filepath}")
+    #df.to_excel(xls_filepath, index=False)
+
+    # Export to XLSX with thumbnails
+    wb = Workbook()
+    ws = wb.active
+    ws.append(['Producer', 'Operator', 'Job', 'Notes', 'Show Location', 'Frames to Fix', 'Timecode Range', 'Thumbnail'])
+    for data in merged_data:
+        img = OpenpyxlImage(data['Thumbnail'])
+        ws.append([data['Producer'], data['Operator'], data['Job'], data['Notes'], data['Show Location'], data['Frames to Fix'], data['Timecode Range']])
+        ws.add_image(img, f"H{ws.max_row}")
+    wb.save(xls_filepath)
+    print(f"Data exported successfully to {csv_filepath} and {xls_filepath}")
+
 
 def upload_to_frameio(token, parent_asset_id, file_path):
     client = FrameioClient(token)
-    file_size = os.path.getsize(file_path)
     try:
-        asset = client.assets.create(
-            parent_asset_id=parent_asset_id,
-            name=os.path.basename(file_path),
-            type='file',
-            filesize=file_size
-        )
-        client.assets.upload(asset['id'], file_path)
+        client.assets.upload(parent_asset_id, file_path)
         print(f"Successfully uploaded {file_path} to Frame.io")
     except Exception as e:
         print(f"Failed to upload {file_path}: {e}")
 
 api_token = 'fio-u-QnXfiuodqz1AHPcL61Lt3EUrJwLMSD9kUAkGjvjJNL712LSagNcndvHSvBV_WnX9'
-parent_asset_id = '67675b7e-deab-4d0c-b6df-f5b7bb595381'
+parent_asset_id = '4f2e034c-5ed7-45a9-bafc-5786a6df6dd5'
 
 def main():
     parser = argparse.ArgumentParser(description="Process and integrate multimedia data for Project 3.")
@@ -306,9 +315,9 @@ def main():
     elif args.command == 'export':
         print("Exporting data to CSV and XLS")
         csv_filepath = "output.csv"
-        merge_and_export_csv(baselight_data, xytech_data, args.video, csv_filepath)
-        print(f"Data exported successfully to {csv_filepath}")
-
+        xls_filepath = "output.xlsx"
+        merge_and_export_csv(baselight_data, xytech_data, args.video, csv_filepath, xls_filepath)
+        
+        
 if __name__ == "__main__":
     main()
-

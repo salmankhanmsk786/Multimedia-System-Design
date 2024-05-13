@@ -53,4 +53,3 @@ Running the Script
 * Ensure MongoDB is running locally.
 * Execute the script with the desired command-line arguments.
 
-
